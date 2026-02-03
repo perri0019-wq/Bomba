@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>BOOM</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  font-family:Arial,sans-serif;
+  font-weight:bold;
+}
+body{
+  margin:0;
+  background:#f4f6ff;
+  font-size:22px;
+}
+
+/* ===== HEADER ===== */
+.header{
+  display:flex;
+  align-items:center;
+  padding:20px;
+  background:#fff;
+  gap:20px;
+}
+.avatar{
+  width:80px;
+  height:80px;
+  border-radius:50%;
+  background:#ddd;
+}
+.menu-back{
+  display:none;
+  background:#eef1ff;
+  padding:30px 46px;
+  border-radius:30px;
+  font-size:32px;
+  cursor:pointer;
+}
+.balance{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  background:#eef1ff;
+  padding:30px 44px;
+  border-radius:36px;
+  font-size:38px;
+  transition:.3s;
+}
+.balance.win{transform:scale(1.08)}
+.coin-icon{
+  width:48px;
+  height:48px;
+  margin-right:14px;
+}
+
+/* ===== MENU ===== */
+.menu{padding:28px}
+.bomb-btn{
+  width:100%;
+  height:25vh;
+  position:relative;
+  border:5px solid #4c6fff;
+  border-radius:36px;
+  overflow:hidden;
+  cursor:pointer;
+  background:#000;
+  box-shadow:
+    0 0 20px rgba(76,111,255,.5),
+    0 0 40px rgba(76,111,255,.35);
+  animation:boomGlow 2s infinite alternate;
+}
+.bomb-btn:active{transform:scale(.96)}
+.bomb-btn img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.bomb-btn span{
+  position:relative;
+  z-index:2;
+  font-size:96px;
+  color:#fff;
+  text-shadow:0 4px 12px rgba(0,0,0,.7);
+}
+
+/* ===== GAME ===== */
+.game{display:none;padding:26px}
+.win-info{
+  text-align:center;
+  font-size:48px;
+  margin-bottom:26px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:14px;
+}
+.cell{
+  aspect-ratio:1/1;
+  background:#fff;
+  border-radius:22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.cell img{
+  width:92%;
+  height:92%;
+  object-fit:contain;
+  animation:pop .25s ease;
+}
+.cell.boom{animation:shake .35s}
+
+/* ===== CONTROLS ===== */
+.controls{margin-top:30px}
+.bet-title{
+  display:flex;
+  align-items:center;
+  font-size:34px;
+  margin-bottom:16px;
+}
+.bet-row{
+  display:flex;
+  gap:22px;
+}
+.bet-row input{
+  flex:1;
+  padding:42px;
+  font-size:46px;
+  border-radius:32px;
+  border:none;
+  text-align:center;
+}
+.bet-row button{
+  padding:42px 48px;
+  font-size:44px;
+  border-radius:32px;
+  border:none;
+}
+
+/* SLIDER */
+.slider{
+  margin:40px auto;
+  width:70%;
+  text-align:center;
+  font-size:36px;
+}
+input[type=range]{
+  -webkit-appearance:none;
+  width:100%;
+  height:14px;
+  border-radius:14px;
+  background:#d0d6ff;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  background:#4c6fff;
+  box-shadow:0 4px 12px rgba(0,0,0,.25);
+}
+
+/* BUTTONS */
+.play-btn,.cashout-btn{
+  width:100%;
+  padding:38px;
+  font-size:40px;
+  border:none;
+  border-radius:34px;
+  margin-top:26px;
+}
+.play-btn{background:#4c6fff;color:#fff}
+.play-btn:disabled{background:#9aa8ff}
+.cashout-btn{background:#22c55e;color:#fff}
+
+/* ANIMATIONS */
+@keyframes pop{
+  from{transform:scale(.3);opacity:0}
+  to{transform:scale(1);opacity:1}
+}
+@keyframes shake{
+  0%{transform:translateX(0)}
+  25%{transform:translateX(-6px)}
+  50%{transform:translateX(6px)}
+  75%{transform:translateX(-6px)}
+  100%{transform:translateX(0)}
+}
+@keyframes boomGlow{
+  from{box-shadow:0 0 15px rgba(76,111,255,.4)}
+  to{box-shadow:0 0 40px rgba(76,111,255,.7)}
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="avatar"></div>
+  <div class="menu-back" id="menuBack" onclick="backToMenu()">в меню 🎰</div>
+  <div class="balance" id="balanceBox">
+    <img src="coin.png" class="coin-icon">
+    <span id="balance">0.00</span>
+  </div>
+</div>
+
+<div class="menu" id="menu">
+  <button class="bomb-btn" onclick="onBoomClick()">
+    <img src="boom-icon.png">
+    <span>BOOM</span>
+  </button>
+</div>
+
+<div class="game" id="game">
+  <div class="win-info">
+    Текущий выигрыш<br>
+    <img src="coin.png" class="coin-icon">
+    <span id="possibleWin">0.00</span><br>
+    x<span id="multiplier">1.00</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="controls">
+    <div class="bet-title">
+      <img src="coin.png" class="coin-icon">Ставка
+    </div>
+
+    <div class="bet-row">
+      <button onclick="halfBet()">½</button>
+      <input type="number" id="bet" value="1" min="1">
+      <button onclick="doubleBet()">2×</button>
+    </div>
+
+    <div class="slider">
+      Бомб: <span id="bombCount">3</span><br>
+      <input type="range" min="2" max="10" value="3" oninput="updateBombs(this.value)">
+    </div>
+
+    <button class="play-btn" id="playBtn" onclick="play()">Играть</button>
+    <button class="cashout-btn" id="cashoutBtn" onclick="cashOut()" style="display:none">
+      Забрать выигрыш
+    </button>
+  </div>
+</div>
+
+<script>
+const boomSound=new Audio('boom.mp3');
+boomSound.volume=0.6;
+
+const explodeSound=new Audio('explode.mp3');
+explodeSound.volume=0.8;
+
+let balance=Number(localStorage.getItem('balance'))||1000;
+let bombs=[],playing=false,betValue=1,multiplier=1;
+
+const balanceEl=document.getElementById('balance');
+const balanceBox=document.getElementById('balanceBox');
+const grid=document.getElementById('grid');
+const multiplierEl=document.getElementById('multiplier');
+
+updateBalance();
+
+function updateBalance(){
+  balance=Number(balance.toFixed(2));
+  balanceEl.innerText=balance.toFixed(2);
+  localStorage.setItem('balance',balance);
+}
+
+function onBoomClick(){
+  boomSound.currentTime=0;
+  boomSound.play();
+  openGame();
+}
+
+function openGame(){
+  menu.style.display='none';
+  game.style.display='block';
+  menuBack.style.display='block';
+  createGrid();
+}
+
+function backToMenu(){
+  playing=false;
+  game.style.display='none';
+  menu.style.display='block';
+  menuBack.style.display='none';
+}
+
+function createGrid(){
+  grid.innerHTML='';
+  for(let i=0;i<25;i++){
+    const c=document.createElement('div');
+    c.className='cell';
+    c.onclick=()=>openCell(c,i);
+    grid.appendChild(c);
+  }
+}
+
+function updateBombs(v){bombCount.innerText=v}
+function halfBet(){bet.value=Math.max(1,Math.floor(bet.value/2))}
+function doubleBet(){bet.value=Math.min(balance,bet.value*2)}
+
+function play(){
+  if(playing) return;
+  betValue=+bet.value;
+  if(betValue<1||betValue>balance) return;
+
+  balance-=betValue;
+  updateBalance();
+
+  playing=true;
+  multiplier=1+Number(bombCount.innerText)*0.12;
+  updateWin();
+
+  playBtn.disabled=true;
+  cashoutBtn.style.display='none';
+
+  bombs=[];
+  while(bombs.length<Number(bombCount.innerText)){
+    let r=Math.floor(Math.random()*25);
+    if(!bombs.includes(r)) bombs.push(r);
+  }
+  createGrid();
+}
+
+function openCell(cell,i){
+  if(!playing||cell.innerHTML) return;
+
+  if(bombs.includes(i)){
+    explodeSound.currentTime=0;
+    explodeSound.play();
+    cell.classList.add('boom');
+    showBombs();
+    playing=false;
+    playBtn.disabled=false;
+  }else{
+    const img=document.createElement('img');
+    img.src='coin.png';
+    cell.appendChild(img);
+    multiplier+=0.18;
+    updateWin();
+    cashoutBtn.style.display='block';
+  }
+}
+
+function showBombs(){
+  [...grid.children].forEach((c,i)=>{
+    if(bombs.includes(i)&&!c.innerHTML){
+      const img=document.createElement('img');
+      img.src='bomb.png';
+      c.appendChild(img);
+    }
+  });
+}
+
+function updateWin(){
+  multiplierEl.innerText=multiplier.toFixed(2);
+  possibleWin.innerText=(betValue*multiplier).toFixed(2);
+}
+
+function cashOut(){
+  if(!playing) return;
+  balance+=betValue*multiplier;
+  updateBalance();
+  balanceBox.classList.add('win');
+  setTimeout(()=>balanceBox.classList.remove('win'),400);
+  playing=false;
+  playBtn.disabled=false;
+  cashoutBtn.style.display='none';
+  createGrid();
+}
+</script>
+
+</body>
+</html>
